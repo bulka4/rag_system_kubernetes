@@ -1,0 +1,71 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: {{ .Values.rayService.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  # Specify which Ray Serve app to use
+  # import_path has the following format: <app-filename>:<class-name>, where:
+  # - app-filename - Name of the file with our defined Ray Serve app in the image (without .py extension)
+  # - class-name - Name of the API class - used to define Rest API endpoints
+  # working_dir - Path to the folder which contain the Ray Serve app file in the image.
+  serveConfigV2: |
+    applications:
+      - name: rag-agent-service
+        import_path: "{{ .Values.rayServeApp.appFilename }}.{{ .Values.rayServeApp.apiClassName }}"
+        runtime_env:
+          working_dir: {{ .Values.rayServeApp.appFolderPath }}
+  rayClusterConfig:
+    rayVersion: {{ .Values.rayService.rayVersion }}
+    # Ray Head node specification
+    headGroupSpec:
+      serviceType: ClusterIP
+      rayStartParams: {}
+      template:
+        spec:
+          containers:
+            - name: ray-head
+              image: {{ .Values.image.url }} # URL of an image from a registry
+              imagePullPolicy: Always # Always pull the image when restarting the Pod
+              resources:
+                requests:
+                  cpu: {{ .Values.rayService.headCpu }}
+                  memory: {{ .Values.rayService.headMemory }}
+                limits:
+                  cpu: {{ .Values.rayService.headCpu }}
+                  memory: {{ .Values.rayService.headMemory }}
+              # Specify which ports are being used (it is not necessary, just for clarity)
+              ports:
+                - containerPort: 6379   # Redis
+                - containerPort: 8265   # Ray Dashboard
+                - containerPort: 8000   # Ray Serve HTTP ingress port (if 8000 doesn't work then try 10001)
+              env:
+                - name: MCP_SERVER_URL
+                  value: {{ .Values.rayServeApp.env.mcpServerUrl }}
+          # Secret for authentication when pulling image from ACR
+          imagePullSecrets:
+            - name: {{ .Values.acrSecret.secretName }}
+    # Ray Worker nodes specification
+    workerGroupSpecs:
+      # Number of replicas of Worker Pods
+      - replicas: {{ .Values.rayService.replicas }}
+        minReplicas: 1
+        maxReplicas: 5
+        groupName: small-group
+        rayStartParams: {}
+        template:
+          spec:
+            containers:
+              - name: ray-worker
+                image: {{ .Values.image.url }} # URL of an image from a registry
+                imagePullPolicy: Always # Always pull the image when restarting the Pod
+                resources:
+                  requests:
+                    cpu: {{ .Values.rayService.workerCpu }}
+                    memory: {{ .Values.rayService.workerMemory }}
+                  limits:
+                    cpu: {{ .Values.rayService.workerCpu }}
+                    memory: {{ .Values.rayService.workerMemory }}
+            # Secret for authentication when pulling image from ACR
+            imagePullSecrets:
+              - name: {{ .Values.acrSecret.secretName }}

@@ -1,0 +1,27 @@
+namespace: ai-agent             # Namespace where to deploy resources
+deploymentName: mcp-server      # Name of the created Deployment (running the MCP server)
+serviceName: mcp-server-service # Name of the created Service (linked to the Deployment)
+
+# Parameters related to the image with the MCP Server
+image:
+  # url - URL of the image in the registry
+  url: ${acr_url}/${mcp_server_image_name}:latest
+
+# Parameters related to the Python app with the MCP Server
+app:
+  # path - Path in the image of the app
+  path: /app/mcp_server.py
+  # Environment variables used by the app
+  envVar:
+    milvusHost: milvus            # This must be the name of the Milvus subchart from dependencies, from the Chart.yaml file
+    milvusCollectionName: my_docs
+    embeddingFieldName: embedding
+    textFieldName: text
+
+# Parameters related to the Secret used for authentication when pulling images from ACR.
+acrSecret:
+  secretName: acr-secret        # Name of the created secret
+  acrUrl: ${acr_url}            # ACR URL (<registry-name>.azurecr.io)
+  username: ${acr_sp_id}        # Service Principal client ID
+  password: ${acr_sp_password}  # Service Principal password
+  email: unused@example.com     # It doesn't matter what we put here but it is needed

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploymentName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.deploymentName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.deploymentName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.deploymentName }}
+    spec:
+      containers:
+        - name: {{ .Values.deploymentName }}
+          # URL of the image in ACR
+          image: {{ .Values.image.url }}
+          imagePullPolicy: Always
+          command: ["python"]
+          # Path to the Python script for starting the MCP Server
+          args: [{{ .Values.app.path }}]
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MILVUS_HOST
+              value: {{ .Values.app.envVar.milvusHost }}
+            - name: MILVUS_COLLECTION_NAME
+              value: {{ .Values.app.envVar.milvusCollectionName }}
+            - name: EMBEDDING_FIELD_NAME
+              value: {{ .Values.app.envVar.embeddingFieldName }}
+            - name: TEXT_FIELD_NAME
+              value: {{ .Values.app.envVar.textFieldName }}
+      # Secret for authentication when pulling image from ACR
+      imagePullSecrets:
+        - name: {{ .Values.acrSecret.secretName }}

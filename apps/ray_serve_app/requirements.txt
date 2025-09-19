@@ -1,0 +1,4 @@
+langgraph==0.6.5
+transformers==4.55.0
+ray[serve]==2.37.0
+fastapi==0.115.14

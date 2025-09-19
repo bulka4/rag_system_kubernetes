@@ -1,0 +1,36 @@
+namespace: ai-agent
+
+# Parameters for the RayService resource
+rayService:
+  name: rag-rayservice  # Name of the created resource
+  replicas: 1
+  rayVersion: "2.49.1"  # match the Ray version of KubeRay
+  headCpu: "2"
+  headMemory: "4Gi"
+  workerCpu: "2"
+  workerMemory: "4Gi"
+
+# Parameters related to the image with the Ray Serve app
+image:
+  # url - URL of the image in the registry
+  url: ${acr_url}/${ray_serve_app_image_name}:latest
+
+# Parameters specific to the Ray Serve app
+rayServeApp:
+  appFolderPath: /app             # Path of the folder which contain the Ray Serve app file in the image.
+  appFilename: ray_serve_app      # Name of the file with our defined Ray Serve app in the image (without .py extension)
+  apiClassName: RAGAgentService   # Name of the API class - used to define Rest API endpoints
+  # Environment variables used by the app
+  env:
+    # mcpServerUrl - URL of the MCP server with a tool for semantic search used by the Agent (RAGAgent class) of 
+    #                the format http://<server-ip-or-dns>:8000/mcp/
+    mcpServerUrl: http://mcp-server-service:8000/mcp/
+
+
+# Parameters related to the Secret used for authentication when pulling images from ACR.
+acrSecret:
+  secretName: acr-secret        # Name of the created secret
+  acrUrl: ${acr_url}            # ACR URL (<registry-name>.azurecr.io)
+  username: ${acr_sp_id}        # Service Principal client ID
+  password: ${acr_sp_password}  # Service Principal password
+  email: unused@example.com     # It doesn't matter what we put here but it is needed

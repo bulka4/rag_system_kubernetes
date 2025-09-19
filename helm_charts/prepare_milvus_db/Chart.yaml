@@ -1,0 +1,8 @@
+apiVersion: v2
+name: prepare-milvus-db
+description: |
+  A Helm chart that deploys a Job that runs a Python script which prepares sample data (documents with their vector embeddings)
+  in Milvus db which will be used by the MCP tool for semantic search.
+type: application
+version: 0.1.0
+appVersion: "1.0"

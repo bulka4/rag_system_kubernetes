@@ -1,0 +1,28 @@
+namespace: ai-agent
+jobName: prepare-milvus-db
+
+# Parameters related to the image with the Python script preparing sample data in Milvus db which will be executed by the Job.
+image:
+  # url - URL of the image in the registry
+  url: ${acr_url}/${prepare_milvus_db_image_name}:latest
+
+
+# Parameters related to the Python script preparing sample data in Milvus db.
+app:
+  # path - Path in the image of the Python script
+  path: /app/prepare_milvus_db.py
+  # Environment variables used by the Python script
+  envVar:
+    milvusHost: 
+    milvusCollectionName: my_docs
+    embeddingFieldName: embedding
+    textFieldName: text
+
+
+# Parameters related to the Secret used for authentication when pulling images from ACR.
+acrSecret:
+  secretName: acr-secret        # Name of the created secret
+  acrUrl: ${acr_url}            # ACR URL (<registry-name>.azurecr.io)
+  username: ${acr_sp_id}        # Service Principal client ID
+  password: ${acr_sp_password}  # Service Principal password
+  email: unused@example.com     # It doesn't matter what we put here but it is needed

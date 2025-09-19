@@ -1,0 +1,12 @@
+apiVersion: v2
+name: rag-rayservice
+description: A Helm chart that deploys a RayService with the RAGAgent Serve app
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+dependencies:
+  # KubeRay is for creating RayService which will run the Ray Serve app serving LangGraph multi-agent workflow
+  - name: kuberay-operator
+    version: 1.4.2
+    repository: "https://ray-project.github.io/kuberay-helm/"

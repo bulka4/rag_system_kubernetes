@@ -1,0 +1,31 @@
+# Job that runs a Python script which prepares sample data (documents with their vector embeddings) in Milvus db which will be used 
+# by the MCP tool for semantic search.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.jobName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  template:
+    spec:
+      containers:
+        - name: {{ .Values.jobName }}
+          image: {{ .Values.image.url }}
+          imagePullPolicy: Always
+          command: ["python"]
+          args: [{{ .Values.app.path }}]
+          env:
+            - name: MILVUS_HOST
+              value: {{ .Values.app.envVar.milvusHost }}
+            - name: MILVUS_COLLECTION_NAME
+              value: {{ .Values.app.envVar.milvusCollectionName }}
+            - name: EMBEDDING_FIELD_NAME
+              value: {{ .Values.app.envVar.embeddingFieldName }}
+            - name: TEXT_FIELD_NAME
+              value: {{ .Values.app.envVar.textFieldName }}
+      # Secret for authentication when pulling image from ACR
+      imagePullSecrets:
+        - name: {{ .Values.acrSecret.secretName }}
+      restartPolicy: Never
+  backoffLimit: 2   # how many retries if the job fails
