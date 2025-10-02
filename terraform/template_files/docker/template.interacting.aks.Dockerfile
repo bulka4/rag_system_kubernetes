@@ -9,6 +9,7 @@ FROM ubuntu:22.04
 ARG MCP_SERVER_IMAGE_NAME=${mcp_server_image_name}
 ARG PREPARE_MILVUS_DB_IMAGE_NAME=${prepare_milvus_db_image_name}
 ARG RAY_SERVE_APP_IMAGE_NAME=${ray_serve_app_image_name}
+ARG SEMANTIC_SEARCH_IMAGE_NAME=${semantic_search_image_name}
 # This prevents prompting user for input for example when using apt-get.
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -16,15 +17,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Tell Docker to use bash for the rest of the Dockerfile
 SHELL ["/bin/bash", "-c"]
 
-
-
-# ========== Prepare folders =============
-
-RUN \
-  # The k8s folder we will contain files related to deploying resources on Kubernetes
-  mkdir /root/k8s && \
-  # The images folder will contain Dockerfile used for building images for our app (MCP server, preparing Milvus db and Ray Serve)
-  mkdir /root/images
+WORKDIR /root
 
 
 
@@ -71,6 +64,13 @@ RUN apt-get update && \
 
 
 
+# ========== Install other useful tools =============
+# Install: nano
+RUN apt-get install nano
+
+
+
+
 # ============ Create and save a bash script for building and pushing to ACR images needed for AI agent =============
 
 # Those images will be used when deploying AI agent resources on AKS. Those are images for:
@@ -78,49 +78,51 @@ RUN apt-get update && \
 # - Preparing Milvus db (smaple documents with their vector embeddings)
 # - Ray Serve app serving the LangGraph graph (agent)
 
-# Copy Dockerfiles needed building images
-COPY apps/mcp_server/Dockerfile /root/images/mcp_server
-COPY apps/prepare_milvus_db/Dockerfile /root/images/prepare_milvus_db
-COPY apps/ray_serve_app/Dockerfile /root/images/ray_serve_app
+# Copy Dockerfiles and other files needed for building images
+COPY apps /root/apps
 
 # Save the script for building image and pushing it to ACR.
-RUN <<EOF cat > /root/images/build_and_push.sh
+RUN <<EOF cat > /root/apps/build_and_push.sh
+az acr build \
+  --registry ${acr_name} \
+  --resource-group ${rg_name} \
+  --image $SEMANTIC_SEARCH_IMAGE_NAME \
+  --file /root/apps/docker_images/semantic.search.Dockerfile \
+  /root/apps/docker_images
+
 az acr build \
   --registry ${acr_name} \
   --resource-group ${rg_name} \
   --image $MCP_SERVER_IMAGE_NAME \
-  --file /root/images/mcp_server/Dockerfile \
-  /root/images/
+  /root/apps/mcp_server
 
 az acr build \
   --registry ${acr_name} \
   --resource-group ${rg_name} \
   --image $PREPARE_MILVUS_DB_IMAGE_NAME \
-  --file /root/images/prepare_milvus_db/Dockerfile \
-  /root/images/
+  /root/apps/prepare_milvus_db
 
 az acr build \
   --registry ${acr_name} \
   --resource-group ${rg_name} \
   --image $RAY_SERVE_APP_IMAGE_NAME \
-  --file /root/images/ray_serve_app/Dockerfile \
-  /root/images/
+  /root/apps/ray_serve_app
 EOF
 
 RUN \
     # Remove the '\r' sign from the script
-    sed -i 's/\r$//' /root/images/build_and_push.sh && \
+    sed -i 's/\r$//' /root/apps/build_and_push.sh && \
     # Make the script executable
-    chmod +x /root/images/build_and_push.sh
+    chmod +x /root/apps/build_and_push.sh
 
 
 
 
 # ============ Copy the folder with Helm charts for deploying AI agent ==============
-COPY helm_charts /root/k8s/helm_charts
+COPY helm_charts /root/helm_charts
 
 
 
 
 # Run the script for building and pushing images to ACR and start a bash session
-CMD ["bash", "-c", "/root/images/build_and_push.sh && /bin/bash"]
+# CMD ["bash", "-c", "/root/apps/build_and_push.sh && /bin/bash"]

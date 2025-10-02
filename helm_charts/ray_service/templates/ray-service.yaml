@@ -5,16 +5,19 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   # Specify which Ray Serve app to use
-  # import_path has the following format: <app-filename>:<class-name>, where:
-  # - app-filename - Name of the file with our defined Ray Serve app in the image (without .py extension)
-  # - class-name - Name of the API class - used to define Rest API endpoints
-  # working_dir - Path to the folder which contain the Ray Serve app file in the image.
+  # import_path has the following format: <app-filename>:<bound-deployment>, where:
+  # - app-filename - Name of the file with the Ray Serve app (without the .py extension)
+  # - bound-deployment - Name of the bound deployment - output of the APIClassName.bind() command, where APIClassName is name of the 
+  #                      class where we define Rest API endpoints.
+  # working_dir - Indicates where to find our Ray Serve app files. There are multiple options for this value:
+  #             - Local .zip file with our app saved in the image: 'file:///folder1/folder2/file.zip'
+  #             - Remote storage like Azure Blob Storage or GitHub repo (it might need to be .zip as well)
   serveConfigV2: |
     applications:
       - name: rag-agent-service
-        import_path: "{{ .Values.rayServeApp.appFilename }}.{{ .Values.rayServeApp.apiClassName }}"
+        import_path: "{{ .Values.app.fileName }}.{{ .Values.app.boundDeploymentName }}"
         runtime_env:
-          working_dir: {{ .Values.rayServeApp.appFolderPath }}
+          working_dir: {{ .Values.app.workingDir }}
   rayClusterConfig:
     rayVersion: {{ .Values.rayService.rayVersion }}
     # Ray Head node specification
@@ -34,17 +37,26 @@ spec:
                 limits:
                   cpu: {{ .Values.rayService.headCpu }}
                   memory: {{ .Values.rayService.headMemory }}
-              # Specify which ports are being used (it is not necessary, just for clarity)
-              ports:
-                - containerPort: 6379   # Redis
-                - containerPort: 8265   # Ray Dashboard
-                - containerPort: 8000   # Ray Serve HTTP ingress port (if 8000 doesn't work then try 10001)
               env:
                 - name: MCP_SERVER_URL
-                  value: {{ .Values.rayServeApp.env.mcpServerUrl }}
+                  value: {{ .Values.app.env.mcpServerUrl }}
+              {{- if .Values.scriptsMounting.enabled }}
+              volumeMounts:
+                # Mount a folder from a volume linked to Azure File share containing scripts to run.
+                - name: scripts
+                  mountPath: {{ .Values.app.folderPath }}
+                  subPath: {{ .Values.scriptsMounting.volumePath }}
+              {{- end}}
           # Secret for authentication when pulling image from ACR
           imagePullSecrets:
             - name: {{ .Values.acrSecret.secretName }}
+          {{- if .Values.scriptsMounting.enabled }}
+          # Volume linked to Azure File share containing scripts to run
+          volumes:
+            - name: scripts
+              persistentVolumeClaim:
+                claimName: {{ .Values.scriptsMounting.pvcName }}
+          {{- end}}
     # Ray Worker nodes specification
     workerGroupSpecs:
       # Number of replicas of Worker Pods
@@ -66,6 +78,20 @@ spec:
                   limits:
                     cpu: {{ .Values.rayService.workerCpu }}
                     memory: {{ .Values.rayService.workerMemory }}
+                {{- if .Values.scriptsMounting.enabled }}
+                volumeMounts:
+                  # Mount a folder from a volume linked to Azure File share containing scripts to run.
+                  - name: scripts
+                    mountPath: {{ .Values.app.folderPath }}
+                    subPath: {{ .Values.scriptsMounting.volumePath }}
+                {{- end}}
             # Secret for authentication when pulling image from ACR
             imagePullSecrets:
               - name: {{ .Values.acrSecret.secretName }}
+            {{- if .Values.scriptsMounting.enabled }}
+            # Volume linked to Azure File share containing scripts to run
+            volumes:
+              - name: scripts
+                persistentVolumeClaim:
+                  claimName: {{ .Values.scriptsMounting.pvcName }}
+            {{- end}}

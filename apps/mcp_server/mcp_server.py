@@ -7,6 +7,7 @@ from fastmcp import FastMCP
 from pymilvus import connections, Collection
 from sentence_transformers import SentenceTransformer
 from typing import List
+import os
 
 # ----- Parameters -----
 
@@ -59,6 +60,9 @@ if __name__ == "__main__":
     # Start the MCP server using the HTTP Transport. This will enable clients to connect over HTTP.
     mcp.run(
         transport="http"
-        ,host="127.0.0.1"
+        # When we use 0.0.0.0, then this process will listen on all network intefaces so processes from other servers
+        # will be able to connect. If we use 127.0.0.1 instead, then it will listen only on the loopback interface and we
+        # will be able to connect only from the same server.
+        ,host="0.0.0.0"
         ,port=8000
     )

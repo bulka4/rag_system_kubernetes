@@ -1,5 +1,5 @@
 # As a base image use another image prepared by us, used for semantic search (Python with pymilvus and sentence-transformers)
-FROM aiagentbulka.azurecr.io/semantic-search
+FROM ${acr_url}/${semantic_search_image_name}
 
 # Set working directory
 WORKDIR /app

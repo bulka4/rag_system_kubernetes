@@ -1,0 +1,10 @@
+apiVersion: v2
+name: common
+description: |
+  A Helm chart that creates resources used by multiple other charts:
+  - acr-secret.yaml - Secret for pulling images from ACR
+  - sa-secret.yaml - Secret for accessing Storage Account where we keep mounted File share with apps' files
+  - pvc.yaml - PVC and PV used for mounting Azure File share with apps' files
+type: application
+version: 0.1.0
+appVersion: "1.0"

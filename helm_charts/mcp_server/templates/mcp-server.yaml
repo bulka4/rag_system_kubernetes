@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: Always
           command: ["python"]
           # Path to the Python script for starting the MCP Server
-          args: [{{ .Values.app.path }}]
+          args: ["{{ .Values.app.folderPath }}/{{ .Values.app.fileName }}"]
           ports:
             - containerPort: 8000
           env:
@@ -34,6 +34,20 @@ spec:
               value: {{ .Values.app.envVar.embeddingFieldName }}
             - name: TEXT_FIELD_NAME
               value: {{ .Values.app.envVar.textFieldName }}
+          {{- if .Values.scriptsMounting.enabled }}
+          volumeMounts:
+            # Mount a folder from a volume linked to Azure File share containing scripts to run.
+            - name: scripts
+              mountPath: {{ .Values.app.folderPath }}
+              subPath: {{ .Values.scriptsMounting.volumePath }}
+          {{- end}}
       # Secret for authentication when pulling image from ACR
       imagePullSecrets:
         - name: {{ .Values.acrSecret.secretName }}
+      {{- if .Values.scriptsMounting.enabled }}
+      # Volume linked to Azure File share containing scripts to run
+      volumes:
+        - name: scripts
+          persistentVolumeClaim:
+            claimName: {{ .Values.scriptsMounting.pvcName }}
+      {{- end}}

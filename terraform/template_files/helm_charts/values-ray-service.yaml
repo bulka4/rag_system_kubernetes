@@ -6,31 +6,40 @@ rayService:
   replicas: 1
   rayVersion: "2.49.1"  # match the Ray version of KubeRay
   headCpu: "2"
-  headMemory: "4Gi"
+  headMemory: "20Gi"
   workerCpu: "2"
-  workerMemory: "4Gi"
+  workerMemory: "20Gi"
 
 # Parameters related to the image with the Ray Serve app
 image:
   # url - URL of the image in the registry
   url: ${acr_url}/${ray_serve_app_image_name}:latest
 
-# Parameters specific to the Ray Serve app
-rayServeApp:
-  appFolderPath: /app             # Path of the folder which contain the Ray Serve app file in the image.
-  appFilename: ray_serve_app      # Name of the file with our defined Ray Serve app in the image (without .py extension)
-  apiClassName: RAGAgentService   # Name of the API class - used to define Rest API endpoints
+
+# Parameters related to the Ray Serve app
+app:
+  # fileName - Name of the file with the Ray Serve app (without the .py extension)
+  # folderPath - A full path to the folder containing the Ray Serve app in the image
+  # workingDir - value for the working_dir parameter in the RayService CRD (YAML) (more info about it in the RayService manifest comments
+  #              (helm_charts/ray_service/templates/ray-service.yaml))
+  # boundDeploymentName - Name of the bound deployment - output of the APIClassName.bind() command, where APIClassName is name of the 
+  #                       class where we define Rest API endpoints
+  fileName: ray_serve_app
+  folderPath: /app
+  workingDir: file:///app/ray_serve_app.zip
+  boundDeploymentName: rag_agent_service
   # Environment variables used by the app
   env:
     # mcpServerUrl - URL of the MCP server with a tool for semantic search used by the Agent (RAGAgent class) of 
     #                the format http://<server-ip-or-dns>:8000/mcp/
     mcpServerUrl: http://mcp-server-service:8000/mcp/
 
-
 # Parameters related to the Secret used for authentication when pulling images from ACR.
 acrSecret:
   secretName: acr-secret        # Name of the created secret
-  acrUrl: ${acr_url}            # ACR URL (<registry-name>.azurecr.io)
-  username: ${acr_sp_id}        # Service Principal client ID
-  password: ${acr_sp_password}  # Service Principal password
-  email: unused@example.com     # It doesn't matter what we put here but it is needed
+
+# Parameters regarding mounting Azure File share containing scripts to run in pods.
+scriptsMounting:
+  enabled: true                                           # Whether or not to enable mounting
+  volumePath: ray_serve_app                               # Path to a folder in Volume (File share) which will be mounted
+  pvcName: azurefiles-pvc                                 # Name of the PVC used for mounting

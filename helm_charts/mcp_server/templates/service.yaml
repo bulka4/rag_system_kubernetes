@@ -9,6 +9,6 @@ spec:
   selector:
     app: {{ .Values.deploymentName }}  # must match Deployment's pod labels
   ports:
-      port: 8000       # Service port (clients use this)
+    - port: 8000       # Service port (clients use this)
       targetPort: 8000 # Container port (from Deployment)
   type: ClusterIP

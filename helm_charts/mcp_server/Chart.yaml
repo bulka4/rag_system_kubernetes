@@ -1,14 +1,8 @@
 apiVersion: v2
 name: mcp-server
 description: |
-A Helm chart that deploys a MCP Server with a tool for semantic search used by AI Agents. That includes deploying
-a Milvus db which is used as a vector db by the tool for semantic search.
+  A Helm chart that deploys a MCP Server with a tool for semantic search used by AI Agents. That includes deploying
+  a Milvus db which is used as a vector db by the tool for semantic search.
 type: application
 version: 0.1.0
 appVersion: "1.0"
-
-dependencies:
-  # Milvus db - Vector db with documents and their vector embeddings used by the tool for semantic search.
-  - name: milvus    # Name of the Milvus subchart
-    version: 4.2.58
-    repository: https://zilliztech.github.io/milvus-helm/

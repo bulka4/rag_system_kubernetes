@@ -1,0 +1,39 @@
+# PVC which will be used in pods to mount Azure File share with scripts which we will run in pods.
+
+
+{{- if .Values.scriptsMounting.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: azurefile-pv
+  namespace: {{ .Values.namespace }}
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: file.csi.azure.com
+    volumeHandle: {{ .Values.scriptsMounting.storageAccountName }}#{{ .Values.scriptsMounting.fileShareName }}
+    volumeAttributes:
+      shareName: {{ .Values.scriptsMounting.fileShareName }}
+      storageAccount: {{ .Values.scriptsMounting.storageAccountName }}
+    nodeStageSecretRef:
+      name: {{ .Values.scriptsMounting.secretName }}
+      namespace: {{ .Values.namespace }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.scriptsMounting.pvcName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany   # so multiple jobs can use it
+  storageClassName: ""
+  resources:
+    requests:
+      storage: 5Gi
+  volumeName: azurefile-pv
+{{- end}}

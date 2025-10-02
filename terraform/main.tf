@@ -27,9 +27,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     name       = "system"
     node_count = var.node_count
     vm_size    = var.node_vm_size
+
     # vm_size, os_type, and other options can be customized
-    type       = "VirtualMachineScaleSets"
-    os_disk_size_gb = 30
+    type                = "VirtualMachineScaleSets"
+    os_disk_size_gb     = 256
     enable_auto_scaling = false
     # For production, consider using node labels, taints, and autoscaling
   }
@@ -88,16 +89,34 @@ module "service_principal" {
 }
 
 
+# Storage Account and File share for files needed to run all the apps. It will be mounted to AKS pods. Thanks to this we will not need to
+# rebuild images everytime we make a change in code.
+module "scripts_sa" {
+  source = "./modules/storage_account"
+  resource_group_name = module.resource_group.name
+  resource_group_location = module.resource_group.location
+  storage_account_name = "aiagentscriptsbulka"
+}
+
+module "scripts_sa_file_share" {
+  source = "./modules/sa_file_share"
+  name = "ai-agent-scripts"
+  storage_account_name = module.scripts_sa.name
+}
+
+
 # Create files content which will be saved on the localhost:
 # - Dockerfile for creating an image for interacting with AKS
 # - values.yaml files for Helm charts
 locals {
   # Names of images we will be pushing to ACR and using in Helm charts
-  mcp_server_image_name         = macp-server
-  prepare_milvus_db_image_name  = prepare-milvus-db
-  ray_serve_app_image_name      = ray-serve-app
+  mcp_server_image_name         = "mcp-server"
+  prepare_milvus_db_image_name  = "prepare-milvus-db"
+  ray_serve_app_image_name      = "ray-serve-app"
+  semantic_search_image_name    = "semantic-search"
 
-  dockerfile = templatefile("template_files/docker/template.Dockerfile", {
+  # Dockerfile for interacting with AKS
+  dockerfile_interacting_aks = templatefile("template_files/docker/template.interacting.aks.Dockerfile", {
     rg_name         = module.resource_group.name
     aks_name        = azurerm_kubernetes_cluster.aks.name
 
@@ -108,46 +127,70 @@ locals {
     tenant_id       = data.azurerm_client_config.current.tenant_id
     subscription_id = data.azurerm_client_config.current.subscription_id
 
-    mcp_server_image_name=macp-server
-    prepare_milvus_db_image_name=prepare-milvus-db
-    ray_serve_app_image_name=ray-serve-app
+    mcp_server_image_name         = local.mcp_server_image_name
+    prepare_milvus_db_image_name  = local.prepare_milvus_db_image_name
+    ray_serve_app_image_name      = local.ray_serve_app_image_name
+    semantic_search_image_name    = local.semantic_search_image_name
+  })
+
+  # Dockerfile for running MCP Server
+  dockerfile_mcp = templatefile("template_files/docker/template.mcp.Dockerfile", {
+    acr_url = module.acr.url
+    semantic_search_image_name = local.semantic_search_image_name
+  })
+
+  # Dockerfile for running the script for preparing sample data in Milvus db
+  dockerfile_prepare_milvus = templatefile("template_files/docker/template.prepare.milvus.Dockerfile", {
+    acr_url = module.acr.url
+    semantic_search_image_name = local.semantic_search_image_name
+  })
+
+  # values.yaml file for the common Helm chart
+  values_common = templatefile("template_files/helm_charts/values-common.yaml", {
+    acr_url               = module.acr.url
+    acr_sp_id             = module.service_principal.client_id
+    acr_sp_password       = module.service_principal.client_password
+
+    mlflow_storage_account_name       = module.scripts_sa.name
+    mlflow_storage_account_access_key = module.scripts_sa.primary_access_key
+    sa_file_share_name                = module.scripts_sa_file_share.name
   })
 
   # values.yaml file for the mcp_server Helm chart
   values_mcp = templatefile("template_files/helm_charts/values-mcp.yaml", {
-    acr_url               = module.acr.url
-    acr_sp_id             = module.service_principal.client_id
-    acr_sp_password       = module.service_principal.client_password
-    mcp_server_image_name = local.mcp_server_image_name
+    acr_url                     = module.acr.url
+    mcp_server_image_name       = local.mcp_server_image_name
+    mlflow_storage_account_name = module.scripts_sa.name
   })
 
   # values.yaml file for the prepare_milvus_db Helm chart
   values_prepare_milvus = templatefile("template_files/helm_charts/values-prepare-milvus.yaml", {
     acr_url                       = module.acr.url
-    acr_sp_id                     = module.service_principal.client_id
-    acr_sp_password               = module.service_principal.client_password
     prepare_milvus_db_image_name  = local.prepare_milvus_db_image_name
+    mlflow_storage_account_name   = module.scripts_sa.name
   })
 
   # values.yaml file for the mcp_server Helm chart
   values_ray_service = templatefile("template_files/helm_charts/values-ray-service.yaml", {
-    acr_url                   = module.acr.url
-    acr_sp_id                 = module.service_principal.client_id
-    acr_sp_password           = module.service_principal.client_password
-    ray_serve_app_image_name  = local.ray_serve_app_image_name
+    acr_url                     = module.acr.url
+    ray_serve_app_image_name    = local.ray_serve_app_image_name
+    mlflow_storage_account_name = module.scripts_sa.name
   })
 }
 
 
 # Save files on the localhost
-resource "local_file" "dockerfile" {
+resource "local_file" "local_files" {
   # each.key - content to save in a file
   # each.value - path where to save a file
   for_each = {
-    0 = {content = local.dockerfile, path = "../interacting.aks.Dockerfile"}
-    1 = {content = local.values_mcp, path = "../helm_charts/mcp_server/values.yaml"}
-    2 = {content = local.values_prepare_milvus, path = "../helm_charts/prepare_milvus_db/values.yaml"}
-    3 = {content = local.values_ray_service, path = "../helm_charts/ray_service/values.yaml"}
+    0 = {content = local.dockerfile_interacting_aks, path = "../interacting.aks.Dockerfile"}
+    1 = {content = local.dockerfile_mcp, path = "../apps/mcp_server/Dockerfile"}
+    2 = {content = local.dockerfile_prepare_milvus, path = "../apps/prepare_milvus_db/Dockerfile"}
+    3 = {content = local.values_common, path = "../helm_charts/common/values.yaml"}
+    4 = {content = local.values_mcp, path = "../helm_charts/mcp_server/values.yaml"}
+    5 = {content = local.values_prepare_milvus, path = "../helm_charts/prepare_milvus_db/values.yaml"}
+    6 = {content = local.values_ray_service, path = "../helm_charts/ray_service/values.yaml"}
   }
 
   content = each.value.content

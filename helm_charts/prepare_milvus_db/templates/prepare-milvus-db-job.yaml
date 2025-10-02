@@ -9,23 +9,51 @@ metadata:
 spec:
   template:
     spec:
+      initContainers:
+      # Init container which will wait for the Milvus db to be ready
+      - name: wait-for-milvus
+        image: busybox:1.36
+        # Use netcat to wait until Milvus' server's port is reachable. Milvus server is created by the 'milvus' subchart and it has
+        # a service linked called {{ .Release.Name }}.
+        command:
+          - sh
+          - -c
+          - |
+            until nc -z {{ .Release.Name }} 19530; do
+              echo "Waiting for milvus..."
+              sleep 5
+            done
       containers:
         - name: {{ .Values.jobName }}
           image: {{ .Values.image.url }}
           imagePullPolicy: Always
           command: ["python"]
-          args: [{{ .Values.app.path }}]
+          args: ["{{ .Values.app.folderPath }}/{{ .Values.app.fileName }}"]
           env:
             - name: MILVUS_HOST
-              value: {{ .Values.app.envVar.milvusHost }}
+              value: {{ .Release.Name }}  # Name of the Service used by the Milvus subchart.
             - name: MILVUS_COLLECTION_NAME
               value: {{ .Values.app.envVar.milvusCollectionName }}
             - name: EMBEDDING_FIELD_NAME
               value: {{ .Values.app.envVar.embeddingFieldName }}
             - name: TEXT_FIELD_NAME
               value: {{ .Values.app.envVar.textFieldName }}
+          {{- if .Values.scriptsMounting.enabled }}
+          volumeMounts:
+            # Mount a folder from a volume linked to Azure File share containing scripts to run.
+            - name: scripts
+              mountPath: {{ .Values.app.folderPath }}
+              subPath: {{ .Values.scriptsMounting.volumePath }}
+          {{- end}}
       # Secret for authentication when pulling image from ACR
       imagePullSecrets:
         - name: {{ .Values.acrSecret.secretName }}
+      {{- if .Values.scriptsMounting.enabled }}
+      # Volume linked to Azure File share containing scripts to run
+      volumes:
+        - name: scripts
+          persistentVolumeClaim:
+            claimName: {{ .Values.scriptsMounting.pvcName }}
+      {{- end}}
       restartPolicy: Never
   backoffLimit: 2   # how many retries if the job fails

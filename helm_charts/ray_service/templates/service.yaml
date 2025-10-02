@@ -10,9 +10,8 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    # Those are labels created automatically by RayService
+    # The ray.io/node-type=head label is created automatically by RayService.
     ray.io/node-type: head
-    ray.io/cluster: {{ .Values.rayService.name }}
   ports:
     - name: serve
       port: 8000        # Port exposed inside the cluster

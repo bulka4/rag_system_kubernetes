@@ -15,6 +15,7 @@ We save in the collection a few example docs.
 
 from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
 from sentence_transformers import SentenceTransformer
+import os
 
 # ----- Parameters ------
 

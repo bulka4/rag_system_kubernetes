@@ -1,0 +1,19 @@
+namespace: ai-agent             # Namespace where to deploy resources
+
+# Parameters related to the Secret used for authentication when pulling images from ACR.
+acrSecret:
+  secretName: acr-secret        # Name of the created secret
+  acrUrl: ${acr_url}            # ACR URL (<registry-name>.azurecr.io)
+  username: ${acr_sp_id}        # Service Principal client ID
+  password: ${acr_sp_password}  # Service Principal password
+  email: unused@example.com     # It doesn't matter what we put here but it is needed
+
+
+# Parameters regarding mounting Azure File share containing scripts to run in pods.
+scriptsMounting:
+  enabled: true                                           # Whether or not to enable mounting
+  pvcName: azurefiles-pvc                                 # Name of the created PVC
+  storageAccountName: ${mlflow_storage_account_name}      # Name of the Storage Account used
+  storageAccountKey: ${mlflow_storage_account_access_key} # Access key to the Storage Account used
+  secretName: sa-secret                                   # Name of a secret with credentials for accessing Storage Account with File share which will be mounted
+  fileShareName: ${sa_file_share_name}                    # Name of the File share used in the Storage Account

@@ -1,6 +1,44 @@
 namespace: ai-agent
 jobName: prepare-milvus-db
 
+# Parameters for the 'milvus' dependency. Here we setup Milvus to run in a standalone mode.
+milvus:
+  cluster:
+    enabled: false
+  pulsarv3:
+    enabled: false
+  # Reduce ammount of disk space Milvus is using
+  standalone:
+    persistence:
+      enabled: true
+      size: 5Gi
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+  etcd:
+    persistence:
+      enabled: true
+      size: 1Gi
+  minio:
+    persistence:
+      enabled: true
+      size: 5Gi
+  pulsar:
+    bookkeeper:
+      persistence:
+        enabled: true
+        size: 1Gi
+    journal:
+      persistence:
+        enabled: true
+        size: 1Gi
+    ledgers:
+      persistence:
+        enabled: true
+        size: 1Gi
+
+
 # Parameters related to the image with the Python script preparing sample data in Milvus db which will be executed by the Job.
 image:
   # url - URL of the image in the registry
@@ -9,20 +47,21 @@ image:
 
 # Parameters related to the Python script preparing sample data in Milvus db.
 app:
-  # path - Path in the image of the Python script
-  path: /app/prepare_milvus_db.py
+  # path - Path in the image of the app
+  fileName: prepare_milvus_db.py # Name of the file with the app to run
+  folderPath: /app  # Path to the folder containing the app
   # Environment variables used by the Python script
   envVar:
-    milvusHost: 
     milvusCollectionName: my_docs
     embeddingFieldName: embedding
     textFieldName: text
 
-
 # Parameters related to the Secret used for authentication when pulling images from ACR.
 acrSecret:
   secretName: acr-secret        # Name of the created secret
-  acrUrl: ${acr_url}            # ACR URL (<registry-name>.azurecr.io)
-  username: ${acr_sp_id}        # Service Principal client ID
-  password: ${acr_sp_password}  # Service Principal password
-  email: unused@example.com     # It doesn't matter what we put here but it is needed
+
+# Parameters regarding mounting Azure File share containing scripts to run in pods.
+scriptsMounting:
+  enabled: true                                           # Whether or not to enable mounting
+  volumePath: prepare_milvus_db                           # Path to a folder in Volume (File share) which will be mounted
+  pvcName: azurefiles-pvc                                 # Name of the PVC used for mounting

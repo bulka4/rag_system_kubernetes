@@ -35,8 +35,8 @@ class RAGAgent:
         # ------------------------
         workflow = StateGraph(dict)
 
-        workflow.add_node("retriever", retriever_agent)
-        workflow.add_node("answer", answer_agent)
+        workflow.add_node("retriever", self.retriever_agent)
+        workflow.add_node("answer", self.answer_agent)
 
         workflow.set_entry_point("retriever")
         workflow.add_edge("retriever", "answer")
@@ -68,10 +68,11 @@ class RAGAgent:
     # ------------------------
     # Agent 1: Retriever
     # ------------------------
-    def retriever_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    async def retriever_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
         query = state["query"]
         # Perform semantic search - find relevant documents in a vector db, similar to the query
-        retrieved_docs = asyncio.run(mcp_search_docs(query)).data
+        result = await self.mcp_search_docs(query)
+        retrieved_docs = result.data
 
         return {"query": query, "retrieved_docs": retrieved_docs}
 
@@ -79,7 +80,7 @@ class RAGAgent:
     # ------------------------
     # Agent 2: Answer Generator
     # ------------------------
-    def answer_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    async def answer_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
         query = state["query"]
         # Take retrieved relevant documents found by the Retriever agent
         retrieved_docs = state["retrieved_docs"]
@@ -87,19 +88,26 @@ class RAGAgent:
         context = "\n".join(retrieved_docs)
         prompt = f"Answer the question based on the following documents:\n{context}\n\nQuestion: {query}"
 
-        # Generate an answer based on the retrieved documents
-        answer = self.answer_model(prompt, max_new_tokens=100, do_sample=False)[0]["generated_text"]
+        # Get the current event loop
+        loop = asyncio.get_event_loop()
+
+        # Generate an answer based on the retrieved documents. Run it as an async function so other async functions
+        # can run at the same time.
+        answer = await loop.run_in_executor(
+            None
+            ,lambda: self.answer_model(prompt, max_new_tokens=100, do_sample=False)[0]["generated_text"]
+        )
         return {"answer": answer, "retrieved_docs": retrieved_docs}
 
 
-    def answer(self, query: str) -> dict:
+    async def answer(self, query: str) -> dict:
         """
         Function for answering a question using the LangGraph graph. Output is a dictionary with the following keys:
         - retrieved_docs: Retrieved documents relevant to the question, used for generating the answer.
         - answer: The generated answer. 
         """
 
-        final_state = rag_agent.graph.invoke({"query": query})
+        final_state = await self.graph.ainvoke({"query": query})
         return final_state
 
 
@@ -109,6 +117,6 @@ class RAGAgent:
 if __name__ == "__main__":
     rag_agent = RAGAgent()
     query = "What is MLflow?"
-    final_state = rag_agent.answer(query)
+    final_state = asyncio.run(rag_agent.answer(query))
     print("Retrieved Docs:", final_state["retrieved_docs"])
     print("Final Answer:", final_state["answer"])
