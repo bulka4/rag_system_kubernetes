@@ -7,7 +7,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy scripts with:
-# - AI agent (LangGraph)
+# - RAG LangGraph workflow
 # - Ray Serve app
 COPY . .
 

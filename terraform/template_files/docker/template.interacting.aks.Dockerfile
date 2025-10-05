@@ -2,10 +2,10 @@ FROM ubuntu:22.04
 
 # ========== Define build-time variables ==========
 
-# Names of images we will build and push to ACR which will be used when deploying AI agent resources on AKS. Those are images for:
+# Names of images we will build and push to ACR which will be used when deploying RAG resources on AKS. Those are images for:
 # - MCP Server
-# - Preparing Milvus db (smaple documents with their vector embeddings)
-# - Ray Serve app with LangGraph graph (agent)
+# - Preparing Milvus db (sample documents with their vector embeddings)
+# - Ray Serve app with RAG LangGraph workflow
 ARG MCP_SERVER_IMAGE_NAME=${mcp_server_image_name}
 ARG PREPARE_MILVUS_DB_IMAGE_NAME=${prepare_milvus_db_image_name}
 ARG RAY_SERVE_APP_IMAGE_NAME=${ray_serve_app_image_name}
@@ -71,12 +71,12 @@ RUN apt-get install nano
 
 
 
-# ============ Create and save a bash script for building and pushing to ACR images needed for AI agent =============
+# ============ Create and save a bash script for building and pushing to ACR images needed for RAG workflow =============
 
-# Those images will be used when deploying AI agent resources on AKS. Those are images for:
+# Those images will be used when deploying RAG workflow resources on AKS. Those are images for:
 # - MCP Server
 # - Preparing Milvus db (smaple documents with their vector embeddings)
-# - Ray Serve app serving the LangGraph graph (agent)
+# - Ray Serve app serving the LangGraph RAG workflow
 
 # Copy Dockerfiles and other files needed for building images
 COPY apps /root/apps
@@ -118,7 +118,7 @@ RUN \
 
 
 
-# ============ Copy the folder with Helm charts for deploying AI agent ==============
+# ============ Copy the folder with Helm charts for deploying all the resources needed for RAG workflow ==============
 COPY helm_charts /root/helm_charts
 
 

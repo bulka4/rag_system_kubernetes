@@ -1,4 +1,4 @@
-namespace: ai-agent             # Namespace where to deploy resources
+namespace: rag             # Namespace where to deploy resources
 
 # Parameters related to the Secret used for authentication when pulling images from ACR.
 acrSecret:

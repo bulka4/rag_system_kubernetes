@@ -1,12 +1,12 @@
-# Before deploying on AKS, we can runn our app with agent locally for testing using Docker Compose, the docker-compose-agent.yml file.
-# This Docker Compose file is not ready yet, it is a draft. It was used before but since then I changed files for apps with MCP Server, preparing Milvus db and agent. 
-# It might require additional configuration for prepare_milvus, mcp and agent services.
+# Before deploying on AKS, we can runn our app with RAG workflow locally for testing using Docker Compose, the docker-compose-rag.yml file.
+# This Docker Compose file is not ready yet, it is a draft. It was used before but since then I changed files for apps with MCP Server, preparing Milvus db and RAG workflow. 
+# It might require additional configuration for prepare_milvus, mcp and rag services.
 
 version: '3.5'
 
 services:
-  # Prepare a container for testing the agent app. That includes code for MCP Server, preparing Milvus db and LangGraph graph with agent.
-  agent:
+  # Prepare a container for testing the LangGraph RAG workflow. That includes code for MCP Server, preparing Milvus db and LangGraph RAG workflow.
+  rag:
     build:
       context: ./apps/
       dockerfile: test.Dockerfile

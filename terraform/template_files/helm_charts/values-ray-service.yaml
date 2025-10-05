@@ -1,4 +1,4 @@
-namespace: ai-agent
+namespace: rag
 
 # Parameters for the RayService resource
 rayService:
@@ -27,10 +27,10 @@ app:
   fileName: ray_serve_app
   folderPath: /app
   workingDir: file:///app/ray_serve_app.zip
-  boundDeploymentName: rag_agent_service
+  boundDeploymentName: rag_service
   # Environment variables used by the app
   env:
-    # mcpServerUrl - URL of the MCP server with a tool for semantic search used by the Agent (RAGAgent class) of 
+    # mcpServerUrl - URL of the MCP server with a tool for semantic search used in the RAG workflow (RAGWorkflow class) of 
     #                the format http://<server-ip-or-dns>:8000/mcp/
     mcpServerUrl: http://mcp-server-service:8000/mcp/
 

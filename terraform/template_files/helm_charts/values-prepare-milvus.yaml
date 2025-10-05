@@ -1,4 +1,4 @@
-namespace: ai-agent
+namespace: rag
 jobName: prepare-milvus-db
 
 # Parameters for the 'milvus' dependency. Here we setup Milvus to run in a standalone mode.
@@ -8,10 +8,6 @@ milvus:
   pulsarv3:
     enabled: false
   # Reduce ammount of disk space Milvus is using
-  standalone:
-    persistence:
-      enabled: true
-      size: 5Gi
   primary:
     persistence:
       enabled: true

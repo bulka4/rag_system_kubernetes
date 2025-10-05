@@ -1,7 +1,7 @@
 apiVersion: v2
 name: mcp-server
 description: |
-  A Helm chart that deploys a MCP Server with a tool for semantic search used by AI Agents. That includes deploying
+  A Helm chart that deploys a MCP Server with a tool for semantic search used in the RAG workflow. That includes deploying
   a Milvus db which is used as a vector db by the tool for semantic search.
 type: application
 version: 0.1.0

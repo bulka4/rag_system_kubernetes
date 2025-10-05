@@ -1,4 +1,4 @@
-namespace: ai-agent             # Namespace where to deploy resources
+namespace: rag             # Namespace where to deploy resources
 deploymentName: mcp-server      # Name of the created Deployment (running the MCP server)
 serviceName: mcp-server-service # Name of the created Service (linked to the Deployment)
 

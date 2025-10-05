@@ -1,7 +1,7 @@
 """
-In this script we create a LangGraph workflow for answering a question based on relevant documents found in a vector db.
+In this script we create a LangGraph RAG workflow for answering a question based on relevant documents found in a vector db.
 
-It uses two agents:
+It uses two AI agents:
 - The 'Retriever' one which is performing a semantic search (using a MCP tool)
 - The 'Answer' one which is generating a final answer based on the documents found by the Retriever.
 """
@@ -15,7 +15,7 @@ from fastmcp.client.transports import StreamableHttpTransport
 from fastmcp import Client
 
 
-class RAGAgent:
+class RAGWorkflow:
     def __init__(
         self
         ,mcp_server_url: str = "http://localhost:8000/mcp/"
@@ -23,7 +23,7 @@ class RAGAgent:
     ):
         """
         Parameters:
-        - mcp_server_url: URL of the MCP server with tools used by the agent
+        - mcp_server_url: URL of the MCP server with tools used by the 'Retriever' agent
         - answer_model: Model used by the 'Answer' agent for generating the final answer. It is created using the transformers.pipeline() function.
         """
         self.mcp_server_url = mcp_server_url
@@ -115,8 +115,8 @@ class RAGAgent:
 # Run an example
 # ------------------------
 if __name__ == "__main__":
-    rag_agent = RAGAgent()
+    rag_workflow = RAGWorkflow()
     query = "What is MLflow?"
-    final_state = asyncio.run(rag_agent.answer(query))
+    final_state = asyncio.run(rag_workflow.answer(query))
     print("Retrieved Docs:", final_state["retrieved_docs"])
     print("Final Answer:", final_state["answer"])

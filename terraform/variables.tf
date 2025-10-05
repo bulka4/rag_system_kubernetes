@@ -38,6 +38,6 @@ variable "kubernetes_version" {
 
 variable "acr_name" {
   type    = string
-  default = "AIAgentBulka"
+  default = "RAGBulka"
   description = "Name of the created ACR."
 }

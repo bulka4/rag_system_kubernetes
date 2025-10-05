@@ -80,7 +80,7 @@ module "acr" {
 
 module "service_principal" {
   source = "./modules/service_principal"
-  service_principal_display_name = "ai_agent_acr"
+  service_principal_display_name = "rag_workflow"
   role_assignments = [
     {role = "acrpush", scope = module.acr.id}
     ,{role = "Contributor", scope = module.acr.id}
@@ -95,12 +95,12 @@ module "scripts_sa" {
   source = "./modules/storage_account"
   resource_group_name = module.resource_group.name
   resource_group_location = module.resource_group.location
-  storage_account_name = "aiagentscriptsbulka"
+  storage_account_name = "ragcriptsbulka"
 }
 
 module "scripts_sa_file_share" {
   source = "./modules/sa_file_share"
-  name = "ai-agent-scripts"
+  name = "rag-scripts"
   storage_account_name = module.scripts_sa.name
 }
 

@@ -14,7 +14,7 @@ spec:
   #             - Remote storage like Azure Blob Storage or GitHub repo (it might need to be .zip as well)
   serveConfigV2: |
     applications:
-      - name: rag-agent-service
+      - name: rag-service
         import_path: "{{ .Values.app.fileName }}.{{ .Values.app.boundDeploymentName }}"
         runtime_env:
           working_dir: {{ .Values.app.workingDir }}
