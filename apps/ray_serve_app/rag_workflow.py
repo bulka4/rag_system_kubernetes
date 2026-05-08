@@ -52,7 +52,7 @@ class RAGWorkflow:
     async def mcp_search_docs(self, query: str) -> list[str]:
         """
         Use the MCP server's search_docs tool to retrieve documents. Before we run this function we need to start the
-        mcp_server/mcp_server.py server from this repo.
+        mcp server using the mcp_server/mcp_server.py script from this repo.
         """
 
         # Connect to the MCP server using HTTP Transport

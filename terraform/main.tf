@@ -25,8 +25,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   default_node_pool {
     name       = "system"
-    node_count = var.node_count
-    vm_size    = var.node_vm_size
+    # node_count = var.node_count
+    # vm_size    = var.node_vm_size
+    node_count = var.gpu_node_count
+    vm_size    = var.gpu_node_vm_size
 
     # vm_size, os_type, and other options can be customized
     type                = "VirtualMachineScaleSets"
@@ -61,6 +63,27 @@ resource "azurerm_kubernetes_cluster" "aks" {
     created_by  = "terraform"
   }
 }
+
+
+/*
+# Add a GPU node pool to the AKS cluster
+resource "azurerm_kubernetes_cluster_node_pool" "gpu" {
+  name                  = "gpu"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  vm_size               = var.gpu_node_vm_size
+  node_count            = var.gpu_node_count
+  mode                  = "User"
+
+  node_labels = {
+    workload = "gpu"
+  }
+
+  # Create a taint on those nodes to allow running only pods which performs GPU computations (that is only a DeepSpeed cluster)
+  node_taints = [
+    "gpu=true:NoSchedule"
+  ]
+}
+*/
 
 
 # Create an ACR where we will be storing a Docker image used for deploying the MLflow Tracking Server and running MLflow project.

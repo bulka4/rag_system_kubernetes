@@ -24,6 +24,16 @@ variable "node_vm_size" {
   default = "Standard_D2s_v3"
 }
 
+variable "gpu_node_count" {
+  type    = number
+  default = 1
+}
+
+variable "gpu_node_vm_size" {
+  type    = string
+  default = "NC4as_T4_v3"
+}
+
 variable "vm_username" {
   type    = string
   default = "azureadmin"
